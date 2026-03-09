@@ -1,39 +1,43 @@
-import { useState } from 'react'
-import { Mail, Phone, MapPin, Loader2 } from 'lucide-react'
+import { useState } from "react"
+import { Mail, Phone, MapPin, Loader2 } from "lucide-react"
 
-const API = import.meta.env.VITE_API_URL || ''
+const API = import.meta.env.VITE_API_URL || ""
 
 export default function ContactForm() {
-  const [formData, setFormData] = useState({ name: '', email: '', subject: '', message: '' })
+  const [formData, setFormData] = useState({
+    name: "",
+    email: "",
+    subject: "",
+    message: "",
+  })
   const [loading, setLoading] = useState(false)
   const [success, setSuccess] = useState(false)
-  const [error, setError] = useState('')
+  const [error, setError] = useState("")
 
   const handleChange = (e) => {
     const { name, value } = e.target
-    setFormData(prev => ({ ...prev, [name]: value }))
+    setFormData((prev) => ({ ...prev, [name]: value }))
   }
 
   const handleSubmit = async (e) => {
     e.preventDefault()
     setLoading(true)
-    setError('')
+    setError("")
 
     try {
       const response = await fetch(`${API}/api/contact`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(formData),
       })
 
-      if (!response.ok) throw new Error('Failed to send message')
+      if (!response.ok) throw new Error("Failed to send message")
 
       setSuccess(true)
-      setFormData({ name: '', email: '', subject: '', message: '' })
+      setFormData({ name: "", email: "", subject: "", message: "" })
       setTimeout(() => setSuccess(false), 5000)
-
     } catch (err) {
-      setError(err.message || 'An error occurred')
+      setError(err.message || "An error occurred")
     } finally {
       setLoading(false)
     }
@@ -52,30 +56,38 @@ export default function ContactForm() {
             Get in <span className="text-primary">Touch</span>
           </h2>
           <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-            Have questions about our security solutions? Our team is ready to help.
+            Have questions about our security solutions? Our team is ready to help you protect your infrastructure.
           </p>
         </div>
 
         <div className="grid md:grid-cols-3 gap-8 mb-12">
-          {[
-            { icon: Mail, label: 'Email', value: 'contact@interscope.tech', href: 'mailto:contact@interscope.tech' },
-            { icon: Phone, label: 'Phone', value: '+254 704610972', href: 'tel:+254704610972' },
-            { icon: MapPin, label: 'Address', value: 'Nairobi, Kenya', href: null },
-          ].map(item => (
-            <div key={item.label} className="bg-card border border-primary/30 rounded-xl p-6 glow-cyan">
-              <div className="w-12 h-12 bg-primary/20 rounded-lg flex items-center justify-center mb-4">
-                <item.icon className="text-primary" size={24} />
-              </div>
-              <h3 className="text-lg font-semibold mb-2">{item.label}</h3>
-              {item.href ? (
-                <a href={item.href} className="text-primary hover:text-accent transition-colors">
-                  {item.value}
-                </a>
-              ) : (
-                <p className="text-muted-foreground">{item.value}</p>
-              )}
+          <div className="bg-card border border-primary/30 rounded-xl p-6 glow-cyan">
+            <div className="w-12 h-12 bg-primary/20 rounded-lg flex items-center justify-center mb-4">
+              <Mail className="text-primary" size={24} />
             </div>
-          ))}
+            <h3 className="text-lg font-semibold mb-2">Email</h3>
+            <a href="mailto:contact@interscope.tech" className="text-primary hover:text-accent transition-colors">
+              contact@interscope.tech
+            </a>
+          </div>
+
+          <div className="bg-card border border-primary/30 rounded-xl p-6 glow-cyan">
+            <div className="w-12 h-12 bg-primary/20 rounded-lg flex items-center justify-center mb-4">
+              <Phone className="text-primary" size={24} />
+            </div>
+            <h3 className="text-lg font-semibold mb-2">Phone</h3>
+            <a href="tel:+254704610972" className="text-primary hover:text-accent transition-colors">
+              +254 704610972
+            </a>
+          </div>
+
+          <div className="bg-card border border-primary/30 rounded-xl p-6 glow-cyan">
+            <div className="w-12 h-12 bg-primary/20 rounded-lg flex items-center justify-center mb-4">
+              <MapPin className="text-primary" size={24} />
+            </div>
+            <h3 className="text-lg font-semibold mb-2">Address</h3>
+            <p className="text-muted-foreground">Nairobi, Kenya</p>
+          </div>
         </div>
 
         <div className="bg-card border border-primary/30 rounded-2xl p-8 glow-cyan">
@@ -83,9 +95,7 @@ export default function ContactForm() {
 
           {success && (
             <div className="mb-6 p-4 bg-primary/20 border border-primary/50 rounded-lg">
-              <p className="text-primary font-semibold">
-                Message sent successfully! We'll get back to you soon.
-              </p>
+              <p className="text-primary font-semibold">Message sent successfully! We'll get back to you soon.</p>
             </div>
           )}
 
@@ -103,7 +113,6 @@ export default function ContactForm() {
                   placeholder="John Doe"
                 />
               </div>
-
               <div>
                 <label className="block text-sm font-medium mb-2">Email Address</label>
                 <input
@@ -141,7 +150,7 @@ export default function ContactForm() {
                 rows={5}
                 className="w-full px-4 py-2 bg-background border border-primary/30 rounded-lg focus:outline-none focus:border-primary transition-colors text-foreground resize-none"
                 placeholder="Tell us about your security needs..."
-              />
+              ></textarea>
             </div>
 
             {error && <p className="text-red-500 text-sm">{error}</p>}
@@ -157,7 +166,7 @@ export default function ContactForm() {
                   Sending...
                 </>
               ) : (
-                'Send Message'
+                "Send Message"
               )}
             </button>
           </form>
