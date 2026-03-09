@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { X, Loader2, CheckCircle, AlertCircle } from 'lucide-react'
+const API = import.meta.env.VITE_API_URL || ''
 
 export default function WhitepaperModal({ isOpen, onClose }) {
   const [formData, setFormData] = useState({ name: '', email: '', company: '', consent: false })
@@ -27,7 +28,7 @@ export default function WhitepaperModal({ isOpen, onClose }) {
     if (!validate()) return
     setLoading(true)
     try {
-      await fetch('/api/leads', {
+      await fetch('${API}/api/leads', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name: formData.name || 'Guest', email: formData.email, company: formData.company, source: 'whitepaper' }),

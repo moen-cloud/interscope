@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { X, Loader2 } from 'lucide-react'
+const API = import.meta.env.VITE_API_URL || ''
 
 export default function TrialModal({ isOpen, onClose }) {
   const [formData, setFormData] = useState({ name: '', email: '', company: '', phone: '' })
@@ -17,7 +18,7 @@ export default function TrialModal({ isOpen, onClose }) {
     setLoading(true)
     setError('')
     try {
-      const response = await fetch('/api/trial', {
+      const response = await fetch('${API}/api/trial', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(formData),
