@@ -1,9 +1,11 @@
 import express from 'express'
-import Lead from '../models/Lead.js'
+import prisma from '../prisma/client.js'
 
 const router = express.Router()
 
-// POST /api/leads — create a lead
+const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+
+// POST /api/leads — capture a lead
 router.post('/', async (req, res) => {
   try {
     const { name, email, company, source } = req.body
@@ -11,33 +13,34 @@ router.post('/', async (req, res) => {
     if (!name || !email) {
       return res.status(400).json({ error: 'Name and email are required' })
     }
-
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
     if (!emailRegex.test(email)) {
       return res.status(400).json({ error: 'Invalid email format' })
     }
 
-    // Check for duplicate email
-    const existing = await Lead.findOne({ email: email.toLowerCase() })
-    if (existing) {
-      return res.status(200).json({ success: true, message: 'Lead already exists', data: existing })
-    }
+    // Upsert — update if exists, create if not
+    const lead = await prisma.lead.upsert({
+      where: { email: email.toLowerCase() },
+      update: { name, company: company || '', source: source || 'contact' },
+      create: {
+        name,
+        email: email.toLowerCase(),
+        company: company || '',
+        source: source || 'contact',
+      },
+    })
 
-    const lead = new Lead({ name, email, company: company || '', source: source || 'contact' })
-    await lead.save()
-
-    console.log('[Interscope] New lead:', { name, email, company, source })
-    res.status(201).json({ success: true, message: 'Lead captured successfully', data: lead })
+    console.log('[Interscope] ✅ Lead saved:', { name, email, source })
+    res.status(201).json({ success: true, message: 'Lead captured', data: lead })
   } catch (error) {
-    console.error('[Interscope] Lead error:', error)
+    console.error('[Interscope] ❌ Lead error:', error)
     res.status(500).json({ error: 'Failed to capture lead' })
   }
 })
 
-// GET /api/leads — list all leads (admin use)
+// GET /api/leads — list all leads
 router.get('/', async (req, res) => {
   try {
-    const leads = await Lead.find().sort({ createdAt: -1 })
+    const leads = await prisma.lead.findMany({ orderBy: { createdAt: 'desc' } })
     res.json({ success: true, count: leads.length, data: leads })
   } catch (error) {
     res.status(500).json({ error: 'Failed to fetch leads' })

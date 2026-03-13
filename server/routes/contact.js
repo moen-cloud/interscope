@@ -1,8 +1,9 @@
 import express from 'express'
-import Contact from '../models/Contact.js'
-import Lead from '../models/Lead.js'
+import prisma from '../prisma/client.js'
 
 const router = express.Router()
+
+const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
 // POST /api/contact — submit contact form
 router.post('/', async (req, res) => {
@@ -12,26 +13,26 @@ router.post('/', async (req, res) => {
     if (!name || !email || !subject || !message) {
       return res.status(400).json({ error: 'All fields are required' })
     }
-
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
     if (!emailRegex.test(email)) {
       return res.status(400).json({ error: 'Invalid email format' })
     }
 
     // Save contact message
-    const contact = new Contact({ name, email, subject, message })
-    await contact.save()
+    const contact = await prisma.contact.create({
+      data: { name, email: email.toLowerCase(), subject, message },
+    })
 
-    // Also save as lead if not already existing
-    const existing = await Lead.findOne({ email: email.toLowerCase() })
-    if (!existing) {
-      await new Lead({ name, email, source: 'contact' }).save()
-    }
+    // Also upsert as lead
+    await prisma.lead.upsert({
+      where: { email: email.toLowerCase() },
+      update: {},
+      create: { name, email: email.toLowerCase(), source: 'contact' },
+    })
 
-    console.log('[Interscope] Contact form:', { name, email, subject })
-    res.status(201).json({ success: true, message: 'Message sent successfully' })
+    console.log('[Interscope] ✅ Contact saved:', { name, email, subject })
+    res.status(201).json({ success: true, message: 'Message sent successfully', data: contact })
   } catch (error) {
-    console.error('[Interscope] Contact error:', error)
+    console.error('[Interscope] ❌ Contact error:', error)
     res.status(500).json({ error: 'Failed to send message' })
   }
 })
@@ -39,7 +40,7 @@ router.post('/', async (req, res) => {
 // GET /api/contact — list all messages
 router.get('/', async (req, res) => {
   try {
-    const messages = await Contact.find().sort({ createdAt: -1 })
+    const messages = await prisma.contact.findMany({ orderBy: { createdAt: 'desc' } })
     res.json({ success: true, count: messages.length, data: messages })
   } catch (error) {
     res.status(500).json({ error: 'Failed to fetch messages' })
