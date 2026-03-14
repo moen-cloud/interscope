@@ -1,101 +1,45 @@
-# Interscope — PostgreSQL Backend (Replaces MongoDB)
+# Interscope Server — No Prisma, Pure pg
 
-Drop this `server/` folder into your existing interscope project,
-replacing the old MongoDB server folder entirely.
+This server uses the `pg` package directly — no Prisma, no binary issues, works on Render perfectly.
 
-## Setup Steps
+## Local Setup
 
-### Step 1 — Install dependencies
 ```bash
-cd server
 npm install
-```
-
-### Step 2 — Create the .env file
-```bash
 cp .env.example .env
-```
-
-Then open `.env` and fill in your PostgreSQL password:
-```
-DATABASE_URL="postgresql://postgres:YOUR_PASSWORD_HERE@localhost:5432/interscope"
-PORT=5000
-```
-
-> Your PostgreSQL username is usually `postgres` and the password is
-> what you set during installation. The database `interscope` will be
-> created automatically in the next step.
-
-### Step 3 — Create the database in PostgreSQL
-Open pgAdmin (or psql) and run:
-```sql
-CREATE DATABASE interscope;
-```
-
-Or using psql in terminal:
-```bash
-psql -U postgres -c "CREATE DATABASE interscope;"
-```
-
-### Step 4 — Run Prisma migrations (creates the tables)
-```bash
-npm run db:setup
-```
-
-This creates 3 tables automatically:
-- `leads` — stores consultation, whitepaper, trial signups
-- `contacts` — stores contact form messages  
-- `trials` — stores free trial requests
-
-### Step 5 — Generate Prisma client
-```bash
-npm run db:generate
-```
-
-### Step 6 — Start the server
-```bash
+# Edit .env and paste your CockroachDB connection string
 npm run dev
 ```
 
-You should see:
+Test: http://localhost:5000/api/health
+
+## Render Deployment
+
+### Environment Variables (add in Render dashboard):
+| Key | Value |
+|-----|-------|
+| DATABASE_URL | your CockroachDB connection string |
+| PORT | 5000 |
+| NODE_ENV | production |
+
+### Build Command:
 ```
-[Interscope] 🚀 Server running on http://localhost:5000
-[Interscope] 🗄️  Database: PostgreSQL via Prisma
+npm install
 ```
 
-### Step 7 — Test it's working
-Open: http://localhost:5000/api/health
-
-You should see:
-```json
-{ "status": "ok", "database": "postgresql — connected ✅" }
+### Start Command:
+```
+node server.js
 ```
 
----
-
-## Useful Commands
-
-| Command | What it does |
-|---------|-------------|
-| `npm run dev` | Start server with auto-reload |
-| `npm run db:setup` | Create/update database tables |
-| `npm run db:studio` | Open Prisma Studio (visual DB browser) |
-| `npm run db:generate` | Regenerate Prisma client after schema changes |
-
-## Prisma Studio (Visual Database Viewer)
-```bash
-npm run db:studio
-```
-Opens a browser UI at http://localhost:5555 where you can see
-and edit all your leads, contacts, and trials visually — completely free!
+Tables are created automatically on first startup — no migration step needed.
 
 ## API Endpoints
-
 | Method | Endpoint | Description |
 |--------|----------|-------------|
-| POST | /api/contact | Save contact form message |
-| GET  | /api/contact | List all contact messages |
-| POST | /api/leads | Save lead (consultation/whitepaper) |
+| POST | /api/contact | Save contact form |
+| GET  | /api/contact | List all messages |
+| POST | /api/leads | Save lead |
 | GET  | /api/leads | List all leads |
-| POST | /api/trial | Save free trial request |
-| GET  | /api/health | Health check + DB status |
+| POST | /api/trial | Save trial request |
+| GET  | /api/health | Health check |

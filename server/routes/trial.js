@@ -1,11 +1,10 @@
 import express from 'express'
-import prisma from '../prisma/client.js'
+import pool from '../db/pool.js'
 
 const router = express.Router()
-
 const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
-// POST /api/trial — submit free trial request
+// POST /api/trial
 router.post('/', async (req, res) => {
   try {
     const { name, email, company, phone } = req.body
@@ -17,26 +16,27 @@ router.post('/', async (req, res) => {
       return res.status(400).json({ error: 'Invalid email format' })
     }
 
-    const trial = await prisma.trial.create({
-      data: {
-        name,
-        email: email.toLowerCase(),
-        company: company || '',
-        phone: phone || '',
-      },
-    })
+    const lowerEmail = email.toLowerCase()
 
-    // Also upsert as lead
-    await prisma.lead.upsert({
-      where: { email: email.toLowerCase() },
-      update: {},
-      create: { name, email: email.toLowerCase(), company: company || '', source: 'trial' },
-    })
+    const result = await pool.query(
+      `INSERT INTO trials (name, email, company, phone)
+       VALUES ($1, $2, $3, $4)
+       RETURNING *`,
+      [name, lowerEmail, company || '', phone || '']
+    )
 
-    console.log('[Interscope] ✅ Trial request saved:', { name, email })
-    res.status(201).json({ success: true, message: 'Trial request submitted', data: trial })
-  } catch (error) {
-    console.error('[Interscope] ❌ Trial error:', error)
+    // Also save as lead
+    await pool.query(
+      `INSERT INTO leads (name, email, company, source)
+       VALUES ($1, $2, $3, 'trial')
+       ON CONFLICT (email) DO NOTHING`,
+      [name, lowerEmail, company || '']
+    )
+
+    console.log('[Interscope] ✅ Trial saved:', { name, email: lowerEmail })
+    res.status(201).json({ success: true, message: 'Trial request submitted', data: result.rows[0] })
+  } catch (err) {
+    console.error('[Interscope] ❌ Trial error:', err.message)
     res.status(500).json({ error: 'Failed to process trial request' })
   }
 })

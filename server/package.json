@@ -5,17 +5,12 @@
   "scripts": {
     "dev": "node --watch server.js",
     "start": "node server.js",
-    "db:setup": "npx prisma migrate dev --name init",
-    "db:studio": "npx prisma studio",
-    "db:generate": "npx prisma generate"
+    "db:setup": "node db/setup.js"
   },
   "dependencies": {
-    "@prisma/client": "^5.20.0",
     "cors": "^2.8.5",
     "dotenv": "^16.4.5",
-    "express": "^4.21.0"
-  },
-  "devDependencies": {
-    "prisma": "^5.20.0"
+    "express": "^4.21.0",
+    "pg": "^8.13.0"
   }
 }

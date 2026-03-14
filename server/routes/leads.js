@@ -1,11 +1,10 @@
 import express from 'express'
-import prisma from '../prisma/client.js'
+import pool from '../db/pool.js'
 
 const router = express.Router()
-
 const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
-// POST /api/leads — capture a lead
+// POST /api/leads
 router.post('/', async (req, res) => {
   try {
     const { name, email, company, source } = req.body
@@ -17,32 +16,35 @@ router.post('/', async (req, res) => {
       return res.status(400).json({ error: 'Invalid email format' })
     }
 
-    // Upsert — update if exists, create if not
-    const lead = await prisma.lead.upsert({
-      where: { email: email.toLowerCase() },
-      update: { name, company: company || '', source: source || 'contact' },
-      create: {
-        name,
-        email: email.toLowerCase(),
-        company: company || '',
-        source: source || 'contact',
-      },
-    })
+    const lowerEmail = email.toLowerCase()
 
-    console.log('[Interscope] ✅ Lead saved:', { name, email, source })
-    res.status(201).json({ success: true, message: 'Lead captured', data: lead })
-  } catch (error) {
-    console.error('[Interscope] ❌ Lead error:', error)
+    // Upsert — update if exists, insert if not
+    const result = await pool.query(
+      `INSERT INTO leads (name, email, company, source)
+       VALUES ($1, $2, $3, $4)
+       ON CONFLICT (email) DO UPDATE
+       SET name = EXCLUDED.name,
+           company = EXCLUDED.company,
+           source = EXCLUDED.source,
+           updated_at = NOW()
+       RETURNING *`,
+      [name, lowerEmail, company || '', source || 'contact']
+    )
+
+    console.log('[Interscope] ✅ Lead saved:', { name, email: lowerEmail, source })
+    res.status(201).json({ success: true, message: 'Lead captured', data: result.rows[0] })
+  } catch (err) {
+    console.error('[Interscope] ❌ Lead error:', err.message)
     res.status(500).json({ error: 'Failed to capture lead' })
   }
 })
 
-// GET /api/leads — list all leads
+// GET /api/leads
 router.get('/', async (req, res) => {
   try {
-    const leads = await prisma.lead.findMany({ orderBy: { createdAt: 'desc' } })
-    res.json({ success: true, count: leads.length, data: leads })
-  } catch (error) {
+    const result = await pool.query('SELECT * FROM leads ORDER BY created_at DESC')
+    res.json({ success: true, count: result.rows.length, data: result.rows })
+  } catch (err) {
     res.status(500).json({ error: 'Failed to fetch leads' })
   }
 })
